@@ -1,41 +1,35 @@
 package com.estacionamento.chefia.controller;
 
 import com.estacionamento.chefia.controller.dtos.CarroDTO;
-import com.estacionamento.chefia.controller.dtos.Placa;
+import com.estacionamento.chefia.controller.dtos.PlacaDTO;
+import com.estacionamento.chefia.services.EstacionamentoService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/estacionamento")
 public class EstacionamentoController {
 
-    private final List<CarroDTO> ESTACIONAMENTO = new ArrayList<>();
+    @Autowired
+    private EstacionamentoService estacionamentoService;
 
     @GetMapping
     public ResponseEntity<?> exibirEstacionamento(){
-        return ResponseEntity.ok(ESTACIONAMENTO);
+        return ResponseEntity.ok(estacionamentoService.getESTACIONAMENTO());
     }
 
     @PostMapping
-    public ResponseEntity<?> cadastrarCarro(@RequestBody Placa placa){
-       Optional<CarroDTO> carroDTOOptional = ESTACIONAMENTO.stream()
-               .filter(carroDTO -> carroDTO.getPlaca().equalsIgnoreCase(placa.getPlaca())).findFirst();
+    public ResponseEntity<?> cadastrarCarro(@RequestBody @Valid PlacaDTO placa){
+        try{
+            CarroDTO carroDTO = estacionamentoService.salvarCarro(placa.getPlaca());
+            return ResponseEntity.status(201).body(carroDTO);
+        }catch (RuntimeException e){
+            return ResponseEntity.status(400).body(Map.of("mensagem", e.getMessage()));
+        }
 
-       if(carroDTOOptional.isPresent()){
-           return ResponseEntity.status(400).body(Map.of("mensagem", "Carro já cadastrado"));
-       }
-
-       CarroDTO carroDTO = new CarroDTO();
-       carroDTO.setPlaca(placa.getPlaca());
-       carroDTO.setHoraEntrada(LocalDateTime.now());
-
-       ESTACIONAMENTO.add(carroDTO);
-       return ResponseEntity.status(201).body(carroDTO);
     }
 }
